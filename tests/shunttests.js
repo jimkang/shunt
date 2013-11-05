@@ -30,9 +30,6 @@ var settings = {
       },
       params.delay);
     },
-    failureOp: function failureOp(params, done) {
-      done('Failed', null);
-    },
     pickKeyFromDict: function pickKeyFromDict(params, done) {
       done('Got', params.dict[params.key]);
     }
@@ -67,8 +64,6 @@ suite('Set up', function setUpSuite() {
         settings.operatives.multiplyArrayAndRunningSum)
       .addOperative('giveBackANumberLater', 
         settings.operatives.giveBackANumberLater)
-      .addOperative('failureOp', 
-        settings.operatives.failureOp)
       .addOperative('pickKeyFromDict', 
         settings.operatives.pickKeyFromDict);
 
@@ -80,9 +75,6 @@ suite('Set up', function setUpSuite() {
       'Could not find operative in shunt operative map.');
     assert.equal('function', 
       typeof session.shunt.operativesForOpNames.giveBackANumberLater,
-      'Could not find operative in shunt operative map.');
-    assert.equal('function', 
-      typeof session.shunt.operativesForOpNames.failureOp,
       'Could not find operative in shunt operative map.');
     assert.equal('function', 
       typeof session.shunt.operativesForOpNames.pickKeyFromDict,
@@ -169,6 +161,37 @@ suite('Single op', function singleOpSuite() {
     }
   );
 
+  test('should execute pickKeyFromDict once', 
+    function runPickKeyFromDict(testDone) {
+      var planArray = ['hide', 'GET', 'chomp'];
+
+      var resultStream = Writable({objectMode: true});
+      resultStream._write = function checkResult(result, encoding, next) {
+        assert.equal(result.status, 'Got');
+        assert.deepEqual(result.value, planArray);
+        next();
+      };
+      resultStream.on('finish', testDone);
+
+      session.shunt.runSequenceGroup([
+          [
+            {
+              id: 'singlePickKeyFromDict',
+              op: 'pickKeyFromDict',
+              params: {
+                dict: {
+                  name: 'mrrp',
+                  profitable: true,
+                  plan: planArray
+                },
+                key: 'plan'
+              }
+            }
+          ]
+        ],
+        resultStream);
+    }
+  );
 
   suiteTeardown(function resetSum() {
     session.runningSum = 0;
