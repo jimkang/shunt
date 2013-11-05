@@ -90,3 +90,31 @@ suite('Set up', function setUpSuite() {
   });
 
 });
+
+suite('Single op', function singleOpSuite() {
+
+  test('should execute addArrayToRunningSum once', 
+    function runAddArrayToRunningSum(testDone) {
+      var resultStream = Writable({objectMode: true});
+      resultStream._write = function checkResult(result, encoding, next) {
+        assert.equal(result.status, 'Added');
+        assert.equal(result.value, 22);
+        assert.equal(session.runningSum, 22);
+        next();
+      };
+      resultStream.on('finish', testDone);
+
+      session.shunt.runSequenceGroup([
+          [
+            {
+              id: 'singleAddArrayTestOp',
+              op: 'addArrayToRunningSum',
+              params: [3, 4, 5, 10]
+            }
+          ]
+        ],
+        resultStream);
+    }
+  );
+});
+

@@ -3,15 +3,8 @@ function createShunt() {
     operativesForOpNames: {}
   };
 
-  // Operatives are expected to take an opData object and call a callback that 
+  // Operatives are expected to take a params variable and call a callback that 
   // takes a status (which can be an error) and a value.
-  //
-  // Example opData: 
-  // {
-  //   id: 'fgU04520'
-  //   op: 'addParams',
-  //   params: [0, 5, 10]
-  // }
   
   shunt.addOperative = function addOperative(opname, operative) {
     this.operativesForOpNames[opname] = operative;
@@ -30,7 +23,7 @@ function createShunt() {
 
     for (var i = 0; i < opSequenceGroups.length; ++i) {
       var sequence = opSequenceGroups[i];
-      this.runSequence(sequence, i, sequenceDone);
+      this.runSequence(sequence, i, writableStream, sequenceDone);
     }
 
     function sequenceDone() {
@@ -49,13 +42,19 @@ function createShunt() {
     var opResults = [];
     var opErrors = [];
 
+    if (opArray.length > 0) {
+      runOp(opArray[0], opDone);
+    }
+    else {
+      sequenceDone();
+    }
+
     function runOp(opData, done) {
       opData.sequenceNumber = sequenceNumber;
-      this.operate(opData, opDone);
+      shunt.operate(opData, opDone);
     }
 
     function opDone(status, value) {
-      debugger;
       var result = {
         status: status,
         value: value
@@ -81,7 +80,7 @@ function createShunt() {
     }
     else {
       var operative = this.operativesForOpNames[opData.op];
-      operative(op.params, done);
+      operative(opData.params, done);
     }
   };
 
