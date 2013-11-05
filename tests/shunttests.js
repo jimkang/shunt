@@ -19,10 +19,10 @@ var settings = {
       done) {
 
       var value = params.reduce(
-        function add(product, next) { return product * next; }, 1
+        function multiply(product, next) { return product * next; }, 1
       );
-      session.runningSum += value;
-      done('Added', session.runningSum);      
+      session.runningSum *= value;
+      done('Multiplied', session.runningSum);      
     },
     giveBackANumberLater: function giveBackANumberLater(params, done) {
       setTimeout(function giveNumber() {
@@ -116,5 +116,37 @@ suite('Single op', function singleOpSuite() {
         resultStream);
     }
   );
+
+  test('should execute multiplyArrayAndRunningSum once', 
+    function runMultiplyArrayAndRunningSum(testDone) {
+      session.runningSum = 2;
+
+      var resultStream = Writable({objectMode: true});
+      resultStream._write = function checkResult(result, encoding, next) {
+        assert.equal(result.status, 'Multiplied');
+        assert.equal(result.value, 1200);
+        assert.equal(session.runningSum, 1200);
+        next();
+      };
+      resultStream.on('finish', testDone);
+
+      session.shunt.runSequenceGroup([
+          [
+            {
+              id: 'singleMultiplyArrayAndRunningSum',
+              op: 'multiplyArrayAndRunningSum',
+              params: [3, 4, 5, 10]
+            }
+          ]
+        ],
+        resultStream);
+    }
+  );
+
+
+  suiteTeardown(function resetSum() {
+    session.runningSum = 0;
+  });
 });
+
 
