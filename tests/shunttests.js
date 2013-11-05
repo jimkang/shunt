@@ -26,7 +26,7 @@ var settings = {
     },
     giveBackANumberLater: function giveBackANumberLater(params, done) {
       setTimeout(function giveNumber() {
-        done('Giving back', params.number);
+        done('Gave back', params.number);
       },
       params.delay);
     },
@@ -136,6 +136,29 @@ suite('Single op', function singleOpSuite() {
               id: 'singleMultiplyArrayAndRunningSum',
               op: 'multiplyArrayAndRunningSum',
               params: [3, 4, 5, 10]
+            }
+          ]
+        ],
+        resultStream);
+    }
+  );
+
+  test('should execute async op (giveBackANumberLater) once', 
+    function runGiveBackANumberLater(testDone) {
+      var resultStream = Writable({objectMode: true});
+      resultStream._write = function checkResult(result, encoding, next) {
+        assert.equal(result.status, 'Gave back');
+        assert.equal(result.value, 666);
+        next();
+      };
+      resultStream.on('finish', testDone);
+
+      session.shunt.runSequenceGroup([
+          [
+            {
+              id: 'singleGiveBackANumberLater',
+              op: 'giveBackANumberLater',
+              params: 666
             }
           ]
         ],
