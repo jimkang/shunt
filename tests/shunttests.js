@@ -158,7 +158,10 @@ suite('Single op', function singleOpSuite() {
             {
               id: 'singleGiveBackANumberLater',
               op: 'giveBackANumberLater',
-              params: 666
+              params: {
+                number: 666,
+                delay: 300
+              }
             }
           ]
         ],
