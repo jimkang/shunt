@@ -54,7 +54,7 @@ suite('Instantiation', function instantiationSuite() {
 
 });
 
-suite('Set up', function setUpSuite() {
+suite('Set up operatives', function setUpSuite() {
 
   test('should set operatives', function instantiateModule() {
     session.shunt
@@ -198,4 +198,61 @@ suite('Single op', function singleOpSuite() {
   });
 });
 
+suite('Op sequences', function sequenceSuite() {
+
+  test('should execute addArrayToRunningSum and multiplyArrayAndRunningSum', 
+    function runAddAndMultiplySequence(testDone) {
+      var resultStream = Writable({objectMode: true});
+
+      resultStream._write = function checkResult(result, encoding, next) {
+        switch (result.id) {
+          case 'testOp1':
+            assert.equal(result.status, 'Added');
+            assert.equal(result.value, 22);
+            assert.equal(session.runningSum, 22);
+            break;
+          case 'testOp2':
+            assert.equal(result.status, 'Multiplied');
+            assert.equal(result.value, 11000);
+            assert.equal(session.runningSum, 11000);
+            break;
+          case 'testOp3':
+            assert.equal(result.status, 'Added');
+            assert.equal(result.value, 11755);
+            assert.equal(session.runningSum, 11755);
+            break;
+        }
+
+        next();
+      };
+      
+      resultStream.on('finish', testDone);
+
+      session.shunt.runSequenceGroup([
+          [
+            {
+              id: 'testOp1',
+              op: 'addArrayToRunningSum',
+              params: [3, 4, 5, 10]
+            },
+            {
+              id: 'testOp2',
+              op: 'multiplyArrayAndRunningSum',
+              params: [1000, 0.5]
+            },
+            {
+              id: 'testOp3',
+              op: 'addArrayToRunningSum',
+              params: [800, -45]
+            }
+          ]
+        ],
+        resultStream);
+    }
+  );
+
+  suiteTeardown(function resetSum() {
+    session.runningSum = 0;
+  });
+});
 
