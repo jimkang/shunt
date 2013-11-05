@@ -54,12 +54,7 @@ function createShunt() {
       shunt.operate(opData, opDone);
     }
 
-    function opDone(status, value) {
-      var result = {
-        status: status,
-        value: value
-      };
-      // opResults.push(result);
+    function opDone(result) {
       ++finishedOpCount;
       writableStream.write(result);
 
@@ -80,7 +75,14 @@ function createShunt() {
     }
     else {
       var operative = this.operativesForOpNames[opData.op];
-      operative(opData.params, done);
+      operative(opData.params, function operativeDone(status, value) {
+        var result = {
+          id: opData.id,
+          status: status,
+          value: value
+        };        
+        done(result);
+      });
     }
   };
 
