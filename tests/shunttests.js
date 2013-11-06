@@ -8,29 +8,40 @@ var Writable = require('stream').Writable;
 
 var settings = {
   operatives: {
-    addArrayToRunningSum: function addArrayToRunningSum(params, done) {
+    addArrayToRunningSum: function addArrayToRunningSum(params, done, 
+      prevOpResult) {
+
       var value = params.reduce(
         function add(sum, next) { return sum + next; }, 0
       );
-      session.runningSum += value;
-      done('Added', session.runningSum);
+      var runningSum = value;
+      if (prevOpResult && typeof prevOpResult.value === 'number') {
+        runningSum += prevOpResult.value;
+      }
+      done('Added', runningSum);
     },
-    multiplyArrayAndRunningSum: function multiplyArrayAndRunningSum(params, 
-      done) {
+    multiplyArrayToRunningProd: function multiplyArrayToRunningProd(params, 
+      done, prevOpResult) {
 
       var value = params.reduce(
         function multiply(product, next) { return product * next; }, 1
       );
-      session.runningSum *= value;
-      done('Multiplied', session.runningSum);      
+      var runningProduct = value;
+      if (prevOpResult && typeof prevOpResult.value === 'number') {
+        runningProduct *= prevOpResult.value;
+      }
+
+      done('Multiplied', runningProduct);      
     },
-    giveBackANumberLater: function giveBackANumberLater(params, done) {
+    giveBackANumberLater: function giveBackANumberLater(params, done,
+      prevOpResult) {
+
       setTimeout(function giveNumber() {
         done('Gave back', params.number);
       },
       params.delay);
     },
-    pickKeyFromDict: function pickKeyFromDict(params, done) {
+    pickKeyFromDict: function pickKeyFromDict(params, done, prevOpResult) {
       done('Got', params.dict[params.key]);
     }
   }
@@ -39,7 +50,6 @@ var settings = {
 /* Session */
 
 var session = {
-  runningSum: 0,
   shunt: null
 };
 
@@ -60,8 +70,8 @@ suite('Set up operatives', function setUpSuite() {
     session.shunt
       .addOperative('addArrayToRunningSum', 
         settings.operatives.addArrayToRunningSum)
-      .addOperative('multiplyArrayAndRunningSum', 
-        settings.operatives.multiplyArrayAndRunningSum)
+      .addOperative('multiplyArrayToRunningProd', 
+        settings.operatives.multiplyArrayToRunningProd)
       .addOperative('giveBackANumberLater', 
         settings.operatives.giveBackANumberLater)
       .addOperative('pickKeyFromDict', 
@@ -71,7 +81,7 @@ suite('Set up operatives', function setUpSuite() {
       typeof session.shunt.operativesForOpNames.addArrayToRunningSum,
       'Could not find operative in shunt operative map.');
     assert.equal('function', 
-      typeof session.shunt.operativesForOpNames.multiplyArrayAndRunningSum,
+      typeof session.shunt.operativesForOpNames.multiplyArrayToRunningProd,
       'Could not find operative in shunt operative map.');
     assert.equal('function', 
       typeof session.shunt.operativesForOpNames.giveBackANumberLater,
@@ -91,7 +101,6 @@ suite('Single op', function singleOpSuite() {
       resultStream._write = function checkResult(result, encoding, next) {
         assert.equal(result.status, 'Added');
         assert.equal(result.value, 22);
-        assert.equal(session.runningSum, 22);
         next();
       };
       resultStream.on('finish', testDone);
@@ -109,15 +118,12 @@ suite('Single op', function singleOpSuite() {
     }
   );
 
-  test('should execute multiplyArrayAndRunningSum once', 
-    function runMultiplyArrayAndRunningSum(testDone) {
-      session.runningSum = 2;
-
+  test('should execute multiplyArrayToRunningProd once', 
+    function runmultiplyArrayToRunningProd(testDone) {
       var resultStream = Writable({objectMode: true});
       resultStream._write = function checkResult(result, encoding, next) {
         assert.equal(result.status, 'Multiplied');
-        assert.equal(result.value, 1200);
-        assert.equal(session.runningSum, 1200);
+        assert.equal(result.value, 600);
         next();
       };
       resultStream.on('finish', testDone);
@@ -125,8 +131,8 @@ suite('Single op', function singleOpSuite() {
       session.shunt.runSequenceGroup([
           [
             {
-              id: 'singleMultiplyArrayAndRunningSum',
-              op: 'multiplyArrayAndRunningSum',
+              id: 'singlemultiplyArrayToRunningProd',
+              op: 'multiplyArrayToRunningProd',
               params: [3, 4, 5, 10]
             }
           ]
@@ -193,14 +199,11 @@ suite('Single op', function singleOpSuite() {
     }
   );
 
-  suiteTeardown(function resetSum() {
-    session.runningSum = 0;
-  });
 });
 
 suite('Op sequences', function sequenceSuite() {
 
-  test('should execute addArrayToRunningSum and multiplyArrayAndRunningSum', 
+  test('should execute addArrayToRunningSum and multiplyArrayToRunningProd', 
     function runAddAndMultiplySequence(testDone) {
       var resultStream = Writable({objectMode: true});
 
@@ -209,50 +212,282 @@ suite('Op sequences', function sequenceSuite() {
           case 'testOp1':
             assert.equal(result.status, 'Added');
             assert.equal(result.value, 22);
-            assert.equal(session.runningSum, 22);
             break;
           case 'testOp2':
             assert.equal(result.status, 'Multiplied');
             assert.equal(result.value, 11000);
-            assert.equal(session.runningSum, 11000);
             break;
           case 'testOp3':
             assert.equal(result.status, 'Added');
             assert.equal(result.value, 11755);
-            assert.equal(session.runningSum, 11755);
             break;
         }
 
         next();
       };
-      
+
       resultStream.on('finish', testDone);
 
       session.shunt.runSequenceGroup([
-          [
-            {
-              id: 'testOp1',
-              op: 'addArrayToRunningSum',
-              params: [3, 4, 5, 10]
-            },
-            {
-              id: 'testOp2',
-              op: 'multiplyArrayAndRunningSum',
-              params: [1000, 0.5]
-            },
-            {
-              id: 'testOp3',
-              op: 'addArrayToRunningSum',
-              params: [800, -45]
-            }
-          ]
-        ],
-        resultStream);
+        [
+          {
+            id: 'testOp1',
+            op: 'addArrayToRunningSum',
+            params: [3, 4, 5, 10]
+          },
+          {
+            id: 'testOp2',
+            op: 'multiplyArrayToRunningProd',
+            params: [1000, 0.5]
+          },
+          {
+            id: 'testOp3',
+            op: 'addArrayToRunningSum',
+            params: [800, -45]
+          }
+        ]
+      ],
+      resultStream);
     }
   );
 
-  suiteTeardown(function resetSum() {
-    session.runningSum = 0;
-  });
+  test('should execute giveBackANumberLater, multiply, and add', 
+    function runMultiplyGiveBackAddSequence(testDone) {
+      var resultStream = Writable({objectMode: true});
+
+      resultStream._write = function checkResult(result, encoding, next) {
+        switch (result.id) {
+          case 'testOp1':
+            assert.equal(result.status, 'Gave back');
+            assert.equal(result.value, 666);
+            break;
+          case 'testOp2':
+            assert.equal(result.status, 'Multiplied');
+            assert.equal(result.value, 2331000);
+            break;
+          case 'testOp3':
+            assert.equal(result.status, 'Added');
+            assert.equal(result.value, 2335568);
+            break;
+        }
+
+        next();
+      };
+
+      resultStream.on('finish', testDone);
+
+      session.shunt.runSequenceGroup([
+        [
+          {
+            id: 'testOp1',
+            op: 'giveBackANumberLater',
+            params: {
+                number: 666,
+                delay: 300
+              }
+          },
+          {
+            id: 'testOp2',
+            op: 'multiplyArrayToRunningProd',
+            params: [1000, 0.5, 7]
+          },
+          {
+            id: 'testOp3',
+            op: 'addArrayToRunningSum',
+            params: [1, 4567]
+          }
+        ]
+      ],
+      resultStream);
+    }
+  );
+
+});
+
+suite('Op sequence groups', function sequenceGroupSuite() {
+
+  test('should execute add and multiply independently of each other', 
+    function runAddAndMultiplySequence(testDone) {
+      var resultStream = Writable({objectMode: true});
+
+      resultStream._write = function checkResult(result, encoding, next) {
+        switch (result.id) {
+          case 'testOp1':
+            assert.equal(result.status, 'Added');
+            assert.equal(result.value, 22);
+            break;
+          case 'testOp2':
+            assert.equal(result.status, 'Multiplied');
+            assert.equal(result.value, 500);
+            break;
+          case 'testOp3':
+            assert.equal(result.status, 'Added');
+            assert.equal(result.value, 755);
+            break;
+        }
+
+        next();
+      };
+
+      resultStream.on('finish', testDone);
+
+      session.shunt.runSequenceGroup([
+        [
+          {
+            id: 'testOp1',
+            op: 'addArrayToRunningSum',
+            params: [3, 4, 5, 10]
+          }
+        ],
+        [
+          {
+            id: 'testOp2',
+            op: 'multiplyArrayToRunningProd',
+            params: [1000, 0.5]
+          }
+        ],
+        [
+          {
+            id: 'testOp3',
+            op: 'addArrayToRunningSum',
+            params: [800, -45]
+          }
+        ]
+      ],
+      resultStream);
+    }
+  );
+
+  test('should execute three sequences independently of each other', 
+    function runAddAndMultiplySequence(testDone) {
+      var resultStream = Writable({objectMode: true});
+
+      resultStream._write = function checkResult(result, encoding, next) {
+        // console.log('Got result for ', result.id);
+        switch (result.id) {
+          case 'testOp1':
+            assert.equal(result.status, 'Added');
+            assert.equal(result.value, 22);
+            break;
+          case 'testOp2':
+            assert.equal(result.status, 'Multiplied');
+            assert.equal(result.value, 11000);
+            break;
+          case 'testOp3':
+            assert.equal(result.status, 'Added');
+            assert.equal(result.value, 11755);
+            break;
+          case 'testOp4':
+            assert.equal(result.status, 'Gave back');
+            assert.equal(result.value, 666);
+            break;
+          case 'testOp5':
+            assert.equal(result.status, 'Multiplied');
+            assert.equal(result.value, 2331000);
+            break;
+          case 'testOp6':
+            assert.equal(result.status, 'Added');
+            assert.equal(result.value, 2335568);
+            break;
+          case 'testOp7':
+            assert.equal(result.status, 'Multiplied');
+            assert.equal(result.value, 5040);
+            break;
+          case 'testOp8':
+            assert.equal(result.status, 'Multiplied');
+            assert.equal(result.value, 126);
+            break;
+          case 'testOp9':
+            assert.equal(result.status, 'Multiplied');
+            assert.equal(result.value, 3780000000);
+            break;
+          case 'testOp10':
+            assert.equal(result.status, 'Added');
+            assert.equal(result.value, 3780001245);
+            break;
+          case 'testOp11':
+            assert.equal(result.status, 'Gave back');
+            assert.equal(result.value, 24);
+            break;            
+        }
+
+        next();
+      };
+
+      resultStream.on('finish', testDone);
+
+      session.shunt.runSequenceGroup([
+        [
+          {
+            id: 'testOp1',
+            op: 'addArrayToRunningSum',
+            params: [3, 4, 5, 10]
+          },
+          {
+            id: 'testOp2',
+            op: 'multiplyArrayToRunningProd',
+            params: [1000, 0.5]
+          },
+          {
+            id: 'testOp3',
+            op: 'addArrayToRunningSum',
+            params: [800, -45]
+          }
+        ],
+        [
+          {
+            id: 'testOp4',
+            op: 'giveBackANumberLater',
+            params: {
+              number: 666,
+              delay: 300
+            }
+          },
+          {
+            id: 'testOp5',
+            op: 'multiplyArrayToRunningProd',
+            params: [1000, 0.5, 7]
+          },
+          {
+            id: 'testOp6',
+            op: 'addArrayToRunningSum',
+            params: [1, 4567]
+          }
+        ],
+        [
+          {
+            id: 'testOp7',
+            op: 'multiplyArrayToRunningProd',
+            params: [1, 2, 3, 4, 5, 6, 7]
+          },
+          {
+            id: 'testOp8',
+            op: 'multiplyArrayToRunningProd',
+            params: [0.125, 0.2]
+          },
+          {
+            id: 'testOp9',
+            op: 'multiplyArrayToRunningProd',
+            params: [1000, 5000, 2, 3]
+          },
+          {
+            id: 'testOp10',
+            op: 'addArrayToRunningSum',
+            params: [900, 345]
+          },
+          {
+            id: 'testOp11',
+            op: 'giveBackANumberLater',
+            params: {
+              number: 24,
+              delay: 200
+            }
+          }
+        ]
+      ],
+      resultStream);
+    }
+  );
+
 });
 
