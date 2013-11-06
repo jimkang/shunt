@@ -1,13 +1,14 @@
 {
   "name": "shunt",
   "version": "0.1.0",
-  "description": "A JSON-based job dispatcher.",
+  "description": "An operation dispatcher.",
   "main": "shunt.js",
   "scripts": {
     "test": "mocha --ui tdd -R spec tests/shunttests.js"
   },
   "repository": "",
   "keywords": [
+    "operation",
     "job",
     "dispatcher"
   ],

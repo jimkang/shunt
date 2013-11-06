@@ -31,7 +31,7 @@ var settings = {
         runningProduct *= prevOpResult.value;
       }
 
-      done('Multiplied', runningProduct);      
+      done('Multiplied', runningProduct);
     },
     giveBackANumberLater: function giveBackANumberLater(params, done,
       prevOpResult) {
