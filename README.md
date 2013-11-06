@@ -1,5 +1,5 @@
-shunt
-=====
+basicset-shunt
+==============
 
 This is a module that dispatches operations. I use it for APIs that support batch processing.
 
@@ -8,7 +8,7 @@ Usage
 
 First, you create the shunt object.
 
-    var shunt = require('../shunt').createShunt();
+    var shunt = require('basicset-shunt').createShunt();
 
 Then, you define _operatives_, which are function that carry out the work of the operations.
 

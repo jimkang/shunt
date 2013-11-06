@@ -1,5 +1,5 @@
 {
-  "name": "shunt",
+  "name": "basicset-shunt",
   "version": "0.1.0",
   "description": "An operation dispatcher.",
   "main": "shunt.js",
