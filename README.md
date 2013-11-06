@@ -42,50 +42,48 @@ Finally, you call _runSequenceGroup_, passing it:
 
 1. opSequenceGroups: An array of arrays containing _operation_ objects. Each subarray is a sequence. The operations in that sequence are guaranteed to run one after another, and each operation will have access to the result of the previous one.
 
-The sequences themselves do not run in a guaranteed order. If you have a bunch of operations you want to run and don't care about order, you can pass an array of arrays, each of which has only one operation object.
+ The sequences themselves do not run in a guaranteed order. If you have a bunch of operations you want to run and don't care about order, you can pass an array of arrays, each of which has only one operation object.
 
-2. writableStream: A [http://nodejs.org/api/stream.html#stream_class_stream_writable](writble stream) in object mode. runSequenceGroup will write result objects (the results of the operations) to it as it produces them.
+2. writableStream: A [writable stream](http://nodejs.org/api/stream.html#stream_class_stream_writable) in object mode. runSequenceGroup will write result objects (the results of the operations) to it as it produces them.
 
-    var resultStream = Writable({objectMode: true});
-
-    resultStream._write = function reportResult(result, encoding, next) {
-      console.log('id:', result.id);
-      console.log('status:', result.status);
-      console.log('value:', result.value);
-      next();
-    };
-
-    resultStream.on('finish', function reportDone() {
-      console.log('All done with operations.');
-    });
-
-    shunt.runSequenceGroup([
-      [
-        {
-          id: 'op1',
-          op: 'delayNumberReturn',
-          params: [3, 4, 5, 10]
-        },
-        {
-          id: 'op2',
-          op: 'multiplyArray',
-          params: [1000, 0.5]
-        }
-      ],
-      [
-        {
-          id: 'op3',
-          op: 'sumUpArray',
-          params: [800, -45]
-        }
-      ]
-    ],
-    resultStream);
+        var resultStream = Writable({objectMode: true});
+        resultStream._write = function reportResult(result, encoding, next) {
+          console.log('id:', result.id);
+          console.log('status:', result.status);
+          console.log('value:', result.value);
+          next();
+        };
+        resultStream.on('finish', function reportDone() {
+          console.log('All done with operations.');
+        });
+        shunt.runSequenceGroup([
+          [
+            {
+              id: 'op1',
+              op: 'delayNumberReturn',
+              params: [3, 4, 5, 10]
+            },
+            {
+              id: 'op2',
+              op: 'multiplyArray',
+              params: [1000, 0.5]
+            }
+          ],
+          [
+            {
+              id: 'op3',
+              op: 'sumUpArray',
+              params: [800, -45]
+            }
+          ]
+        ],
+        resultStream);
 
 Operation objects
 -----------------
 
 Each operation object should have these properties:
+
 - __id__: A unique identifier that the client can use to match results to the requestion operations.
 - __op__: A string indicating the operative to use to execute the operation.
 - __params__: The params to pass to the operative. Can be anything the operative expects.
@@ -94,6 +92,7 @@ Result objects
 --------------
 
 Result objects properties:
+
 - __id__: An identifier that matches the operation object that was used to produce this result.
 - __status__: A string indicating how the operation went.
 - __value__: The result of the operation.
