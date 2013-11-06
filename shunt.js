@@ -3,8 +3,9 @@ function createShunt() {
     operativesForOpNames: {}
   };
 
-  // Operatives are expected to take a params variable and call a callback that 
-  // takes a status (which can be an error) and a value.
+  // Operatives are expected to take:
+  //  params, callback, (optional) prevOpResult
+  // The callback takes a status (which can be an error) and a value.
   
   shunt.addOperative = function addOperative(opname, operative) {
     this.operativesForOpNames[opname] = operative;
@@ -43,15 +44,15 @@ function createShunt() {
     var opErrors = [];
 
     if (opArray.length > 0) {
-      runOp(opArray[0], opDone);
+      runOp(opArray[0], opDone, null);
     }
     else {
       sequenceDone();
     }
 
-    function runOp(opData, done) {
+    function runOp(opData, done, prevOpResult) {
       opData.sequenceNumber = sequenceNumber;
-      shunt.operate(opData, opDone);
+      shunt.operate(opData, opDone, prevOpResult);
     }
 
     function opDone(result) {
@@ -59,9 +60,9 @@ function createShunt() {
       writableStream.write(result);
 
       if (finishedOpCount < opArray.length) {
-        // Next tick?
+        // TODO: Next tick?
         var opData = opArray[finishedOpCount];
-        runOp(opData, opDone);
+        runOp(opData, opDone, result);
       }
       else {
         sequenceDone();
@@ -69,7 +70,7 @@ function createShunt() {
     }
   };
 
-  shunt.operate = function operate(opData, done) {
+  shunt.operate = function operate(opData, done, prevOpResult) {
     if (!opData.op || !(opData.op in this.operativesForOpNames)) {
       done('Not understood', null);
     }
@@ -82,7 +83,8 @@ function createShunt() {
           value: value
         };        
         done(result);
-      });
+      },
+      prevOpResult);
     }
   };
 
