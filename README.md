@@ -1,7 +1,7 @@
 basicset-shunt
 ==============
 
-This is a module that dispatches/routes operations. I use it for APIs that support batch operations. e.g. Saving a document and retrieving another document in one call.
+Dispatches/routes operations. For APIs that support batch operations. e.g. Saving a document and retrieving another document in one call.
 
 Installation
 ------------

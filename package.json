@@ -6,7 +6,7 @@
   "scripts": {
     "test": "make test"
   },
-  "repository": "",
+  "repository": "git@github.com:jimkang/shunt.git",
   "keywords": [
     "operation",
     "job",
@@ -15,6 +15,10 @@
   ],
   "author": "Jim Kang",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jimkang/shunt/issues"
+  },
+  "homepage": "https://github.com/jimkang/shunt",
   "dependencies": {
     "export-methods": "^1.1.0"
   },
