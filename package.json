@@ -1,18 +1,22 @@
 {
   "name": "basicset-shunt",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "An operation dispatcher.",
   "main": "shunt.js",
   "scripts": {
-    "test": "mocha --ui tdd -R spec tests/shunttests.js"
+    "test": "make test"
   },
   "repository": "",
   "keywords": [
     "operation",
     "job",
-    "dispatcher"
+    "dispatcher",
+    "router"
   ],
   "author": "Jim Kang",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "mocha": "^2.2.4"
+  }
 }

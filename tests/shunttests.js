@@ -3,6 +3,7 @@
 var assert = require('assert');
 var uid = require('./uid').uid;
 var Writable = require('stream').Writable;
+var createShunt = require('../shunt');
 
 /* Settings */
 
@@ -18,7 +19,7 @@ var settings = {
       if (prevOpResult && typeof prevOpResult.value === 'number') {
         runningSum += prevOpResult.value;
       }
-      done('Added', runningSum);
+      done(null, runningSum);
     },
     multiplyArrayToRunningProd: function multiplyArrayToRunningProd(params, 
       done, prevOpResult) {
@@ -31,18 +32,18 @@ var settings = {
         runningProduct *= prevOpResult.value;
       }
 
-      done('Multiplied', runningProduct);
+      done(null, runningProduct);
     },
     giveBackANumberLater: function giveBackANumberLater(params, done,
       prevOpResult) {
 
       setTimeout(function giveNumber() {
-        done('Gave back', params.number);
+        done(null, params.number);
       },
       params.delay);
     },
     pickKeyFromDict: function pickKeyFromDict(params, done, prevOpResult) {
-      done('Got', params.dict[params.key]);
+      done(null, params.dict[params.key]);
     }
   }
 };
@@ -58,7 +59,7 @@ var session = {
 suite('Instantiation', function instantiationSuite() {
 
   test('should create the module', function instantiateModule() {
-    session.shunt = require('../shunt').createShunt();
+    session.shunt = createShunt();
     assert.ok(session.shunt, 'Could not create shunt');
   });
 
@@ -99,7 +100,7 @@ suite('Single op', function singleOpSuite() {
     function runAddArrayToRunningSum(testDone) {
       var resultStream = Writable({objectMode: true});
       resultStream._write = function checkResult(result, encoding, next) {
-        assert.equal(result.status, 'Added');
+        assert.equal(result.error, null);
         assert.equal(result.value, 22);
         next();
       };
@@ -122,7 +123,7 @@ suite('Single op', function singleOpSuite() {
     function runmultiplyArrayToRunningProd(testDone) {
       var resultStream = Writable({objectMode: true});
       resultStream._write = function checkResult(result, encoding, next) {
-        assert.equal(result.status, 'Multiplied');
+        assert.ok(!result.error);
         assert.equal(result.value, 600);
         next();
       };
@@ -145,7 +146,7 @@ suite('Single op', function singleOpSuite() {
     function runGiveBackANumberLater(testDone) {
       var resultStream = Writable({objectMode: true});
       resultStream._write = function checkResult(result, encoding, next) {
-        assert.equal(result.status, 'Gave back');
+        assert.ok(!result.error);
         assert.equal(result.value, 666);
         next();
       };
@@ -173,7 +174,7 @@ suite('Single op', function singleOpSuite() {
 
       var resultStream = Writable({objectMode: true});
       resultStream._write = function checkResult(result, encoding, next) {
-        assert.equal(result.status, 'Got');
+        assert.equal(result.error, null);
         assert.deepEqual(result.value, planArray);
         next();
       };
@@ -210,15 +211,15 @@ suite('Op sequences', function sequenceSuite() {
       resultStream._write = function checkResult(result, encoding, next) {
         switch (result.id) {
           case 'testOp1':
-            assert.equal(result.status, 'Added');
+            assert.equal(result.error, null);
             assert.equal(result.value, 22);
             break;
           case 'testOp2':
-            assert.equal(result.status, 'Multiplied');
+            assert.equal(result.error, null);
             assert.equal(result.value, 11000);
             break;
           case 'testOp3':
-            assert.equal(result.status, 'Added');
+            assert.equal(result.error, null);
             assert.equal(result.value, 11755);
             break;
         }
@@ -258,15 +259,15 @@ suite('Op sequences', function sequenceSuite() {
       resultStream._write = function checkResult(result, encoding, next) {
         switch (result.id) {
           case 'testOp1':
-            assert.equal(result.status, 'Gave back');
+            assert.equal(result.error, null);
             assert.equal(result.value, 666);
             break;
           case 'testOp2':
-            assert.equal(result.status, 'Multiplied');
+            assert.equal(result.error, null);
             assert.equal(result.value, 2331000);
             break;
           case 'testOp3':
-            assert.equal(result.status, 'Added');
+            assert.equal(result.error, null);
             assert.equal(result.value, 2335568);
             break;
         }
@@ -313,15 +314,15 @@ suite('Op sequence groups', function sequenceGroupSuite() {
       resultStream._write = function checkResult(result, encoding, next) {
         switch (result.id) {
           case 'testOp1':
-            assert.equal(result.status, 'Added');
+            assert.ok(!result.error);
             assert.equal(result.value, 22);
             break;
           case 'testOp2':
-            assert.equal(result.status, 'Multiplied');
+            assert.ok(!result.error);
             assert.equal(result.value, 500);
             break;
           case 'testOp3':
-            assert.equal(result.status, 'Added');
+            assert.ok(!result.error);
             assert.equal(result.value, 755);
             break;
         }
@@ -366,47 +367,47 @@ suite('Op sequence groups', function sequenceGroupSuite() {
         // console.log('Got result for ', result.id);
         switch (result.id) {
           case 'testOp1':
-            assert.equal(result.status, 'Added');
+            assert.ok(!result.error);
             assert.equal(result.value, 22);
             break;
           case 'testOp2':
-            assert.equal(result.status, 'Multiplied');
+            assert.ok(!result.error);
             assert.equal(result.value, 11000);
             break;
           case 'testOp3':
-            assert.equal(result.status, 'Added');
+            assert.ok(!result.error);
             assert.equal(result.value, 11755);
             break;
           case 'testOp4':
-            assert.equal(result.status, 'Gave back');
+            assert.ok(!result.error);
             assert.equal(result.value, 666);
             break;
           case 'testOp5':
-            assert.equal(result.status, 'Multiplied');
+            assert.ok(!result.error);
             assert.equal(result.value, 2331000);
             break;
           case 'testOp6':
-            assert.equal(result.status, 'Added');
+            assert.ok(!result.error);
             assert.equal(result.value, 2335568);
             break;
           case 'testOp7':
-            assert.equal(result.status, 'Multiplied');
+            assert.ok(!result.error);
             assert.equal(result.value, 5040);
             break;
           case 'testOp8':
-            assert.equal(result.status, 'Multiplied');
+            assert.ok(!result.error);
             assert.equal(result.value, 126);
             break;
           case 'testOp9':
-            assert.equal(result.status, 'Multiplied');
+            assert.ok(!result.error);
             assert.equal(result.value, 3780000000);
             break;
           case 'testOp10':
-            assert.equal(result.status, 'Added');
+            assert.ok(!result.error);
             assert.equal(result.value, 3780001245);
             break;
           case 'testOp11':
-            assert.equal(result.status, 'Gave back');
+            assert.ok(!result.error);
             assert.equal(result.value, 24);
             break;            
         }

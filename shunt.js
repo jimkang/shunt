@@ -5,7 +5,7 @@ function createShunt() {
 
   // Operatives are expected to take:
   //  params, callback, (optional) prevOpResult
-  // The callback takes a status (which can be an error) and a value.
+  // The callback takes a error and a value.
   
   shunt.addOperative = function addOperative(opname, operative) {
     this.operativesForOpNames[opname] = operative;
@@ -76,10 +76,10 @@ function createShunt() {
     }
     else {
       var operative = this.operativesForOpNames[opData.op];
-      operative(opData.params, function operativeDone(status, value) {
+      operative(opData.params, function operativeDone(error, value) {
         var result = {
           id: opData.id,
-          status: status,
+          error: error,
           value: value
         };        
         done(result);
@@ -91,4 +91,4 @@ function createShunt() {
   return shunt;
 }
 
-module.exports.createShunt = createShunt;
+module.exports = createShunt;

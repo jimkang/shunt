@@ -1,18 +1,24 @@
 basicset-shunt
 ==============
 
-This is a module that dispatches operations. I use it for APIs that support batch processing.
+This is a module that dispatches/routes operations. I use it for APIs that support batch operations. e.g. Saving a document and retrieving another document in one call.
+
+Installation
+------------
+
+    npm install basicset-shunt
 
 Usage
 -----
 
 First, you create the shunt object.
 
-    var shunt = require('basicset-shunt').createShunt();
+    var createShunt = require('basicset-shunt');
+    var aShunt = createShunt();
 
 Then, you define _operatives_, which are function that carry out the work of the operations.
 
-    shunt
+    aShunt
       .addOperative('sumUpArray', function(params, done, prevOpResult) {
         var value = params.reduce(
           function add(sum, next) { return sum + next; }, 0
@@ -35,7 +41,7 @@ Then, you define _operatives_, which are function that carry out the work of the
 addOperative tells shunt which functions map to which string keys. Each operative is expected to have a function signature that takes:
 
 1. __params__, which can be anything
-2. __done__, a callback function which takes a status string (which could indicate an error) and whatever value the operative wants to report.
+2. __done__, a callback function which takes an error and whatever value the operative wants to report.
 3. __prevOpResult__, which is the _result_ object (explained further down) from the previous operation in the sequence. This could be null.
 
 Finally, you call _runSequenceGroup_, passing it:
@@ -49,7 +55,7 @@ Finally, you call _runSequenceGroup_, passing it:
         var resultStream = Writable({objectMode: true});
         resultStream._write = function reportResult(result, encoding, next) {
           console.log('id:', result.id);
-          console.log('status:', result.status);
+          console.log('error:', result.error);
           console.log('value:', result.value);
           next();
         };
@@ -94,16 +100,36 @@ Result objects
 Result objects properties:
 
 - __id__: An identifier that matches the operation object that was used to produce this result.
-- __status__: A string indicating how the operation went.
+- __error__: An error object.
 - __value__: The result of the operation.
 
 
-How to run the tests
---------------------
+Tests
+-----
 
-    mocha --ui tdd -R spec tests/shunttests.js
+Run tests with `make test`.
 
 License
 -------
 
-MIT.
+The MIT License (MIT)
+
+Copyright (c) 2015 Jim Kang
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
