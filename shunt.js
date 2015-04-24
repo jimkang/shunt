@@ -1,22 +1,26 @@
+var exportMethods = require('export-methods');
+
 function createShunt() {
-  var shunt = {
-    operativesForOpNames: {}
-  };
+  var operativesForOpNames = {};
 
   // Operatives are expected to take:
   //  params, callback, (optional) prevOpResult
   // The callback takes a error and a value.
   
-  shunt.addOperative = function addOperative(opname, operative) {
-    this.operativesForOpNames[opname] = operative;
-    return shunt;
-  };
+  function addOperative(opname, operative) {
+    operativesForOpNames[opname] = operative;
+    return exports;
+  }
+
+  function operativeExists(opname) {
+    return (opname in operativesForOpNames);
+  }
 
   // Runs an array of sequence groups (each of which is an array of opData 
   // objects) and writes results to the given stream.
   //
   // Groups are not guaranteed to finish one after the other.
-  shunt.runSequenceGroup = function runSequenceGroup(opSequenceGroups, 
+  function runSequenceGroup(opSequenceGroups, 
     writableStream) {
 
     var opResults = [];
@@ -24,7 +28,7 @@ function createShunt() {
 
     for (var i = 0; i < opSequenceGroups.length; ++i) {
       var sequence = opSequenceGroups[i];
-      this.runSequence(sequence, i, writableStream, sequenceDone);
+      runSequence(sequence, i, writableStream, sequenceDone);
     }
 
     function sequenceDone() {
@@ -33,12 +37,10 @@ function createShunt() {
         writableStream.end();
       }
     }
-  };
+  }
 
   // Sequences are guaranteed to finish one after the other.
-  shunt.runSequence = function runSequence(opArray, sequenceNumber, 
-    writableStream, sequenceDone) {
-
+  function runSequence(opArray, sequenceNumber, writableStream, sequenceDone) {
     var finishedOpCount = 0;
     var opResults = [];
     var opErrors = [];
@@ -52,7 +54,7 @@ function createShunt() {
 
     function runOp(opData, done, prevOpResult) {
       opData.sequenceNumber = sequenceNumber;
-      shunt.operate(opData, opDone, prevOpResult);
+      operate(opData, opDone, prevOpResult);
     }
 
     function opDone(result) {
@@ -68,14 +70,14 @@ function createShunt() {
         sequenceDone();
       }
     }
-  };
+  }
 
-  shunt.operate = function operate(opData, done, prevOpResult) {
-    if (!opData.op || !(opData.op in this.operativesForOpNames)) {
+  function operate(opData, done, prevOpResult) {
+    if (!opData.op || !(opData.op in operativesForOpNames)) {
       done('Not understood', null);
     }
     else {
-      var operative = this.operativesForOpNames[opData.op];
+      var operative = operativesForOpNames[opData.op];
       operative(opData.params, function operativeDone(error, value) {
         var result = {
           id: opData.id,
@@ -86,9 +88,16 @@ function createShunt() {
       },
       prevOpResult);
     }
-  };
+  }
 
-  return shunt;
+  var exports = exportMethods(
+    addOperative,
+    operativeExists,
+    runSequenceGroup,
+    runSequence
+  );
+  
+  return exports;
 }
 
 module.exports = createShunt;

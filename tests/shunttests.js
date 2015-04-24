@@ -78,18 +78,11 @@ suite('Set up operatives', function setUpSuite() {
       .addOperative('pickKeyFromDict', 
         settings.operatives.pickKeyFromDict);
 
-    assert.equal('function', 
-      typeof session.shunt.operativesForOpNames.addArrayToRunningSum,
-      'Could not find operative in shunt operative map.');
-    assert.equal('function', 
-      typeof session.shunt.operativesForOpNames.multiplyArrayToRunningProd,
-      'Could not find operative in shunt operative map.');
-    assert.equal('function', 
-      typeof session.shunt.operativesForOpNames.giveBackANumberLater,
-      'Could not find operative in shunt operative map.');
-    assert.equal('function', 
-      typeof session.shunt.operativesForOpNames.pickKeyFromDict,
-      'Could not find operative in shunt operative map.');
+    assert.ok(session.shunt.operativeExists('addArrayToRunningSum'));
+    assert.ok(session.shunt.operativeExists('multiplyArrayToRunningProd'));
+    assert.ok(session.shunt.operativeExists('giveBackANumberLater'));
+    assert.ok(session.shunt.operativeExists('pickKeyFromDict'));
+    assert.ok(!session.shunt.operativeExists('madeUpMalarkey'));
   });
 
 });
